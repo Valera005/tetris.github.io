@@ -1,5 +1,5 @@
 
-export const [rows, cols] = [20, 10];
+export const [rows, cols] = [27, 10];
 
 export const tetris_grid_tag = document.querySelector(".tetris");
 
@@ -157,10 +157,11 @@ export class TetrisObject {
 
         for (let i = 0; i < this.sprite.rows; i++) {
             for (let j = 0; j < this.sprite.cols; j++) {
+
                 if (this.sprite.sprite[i][j] === 1 && (new_coords.x + j < 0 ||
                     new_coords.x + j >= cols || new_coords.y + i >= rows ||
-                    tetris_box_2d[new_coords.y + i][new_coords.x + j].style.
-                        backgroundColor !== default_background_color)) {
+                    (tetris_box_2d[new_coords.y + i][new_coords.x + j].style.backgroundColor !== default_background_color
+                        && !tetris_box_2d[new_coords.y + i][new_coords.x + j].style.backgroundColor.endsWith("0.5)")))) {
                     return true;
                 }
             }
@@ -195,7 +196,7 @@ export class TetrisObject {
     }
 
     draw() {
-
+        this.draw_landing_mask();
         for (let i = 0; i < this.sprite.rows; i++) {
             for (let j = 0; j < this.sprite.cols; j++) {
                 if (this.sprite.sprite[i][j] === 1) {
@@ -204,11 +205,11 @@ export class TetrisObject {
                 }
             }
         }
-        this.draw_landing_mask();
-
     }
 
     clear() {
+
+        this.clear_landing_mask();
 
         for (let i = 0; i < this.sprite.rows; i++) {
 
@@ -220,8 +221,6 @@ export class TetrisObject {
             }
         }
 
-        this.clear_landing_mask();
-
     }
 
     is_touched_down() {
@@ -231,8 +230,9 @@ export class TetrisObject {
 
                 if ((this.sprite.sprite[i][j] === 1 &&
                     (i === this.sprite.rows - 1 || (i !== this.sprite.rows - 1 && this.sprite.sprite[i + 1][j] !== 1)))
-                    && (this.coords.y + i + 1 === rows || tetris_box_2d[this.coords.y + i + 1]
-                    [this.coords.x + j].style.backgroundColor !== default_background_color)) {
+                    && (this.coords.y + i + 1 === rows ||
+                        (tetris_box_2d[this.coords.y + i + 1][this.coords.x + j].style.backgroundColor !== default_background_color &&
+                            !tetris_box_2d[this.coords.y + i + 1][this.coords.x + j].style.backgroundColor.endsWith("0.5)")))) {
 
                     console.log("Result true",)
                     return true;
@@ -252,18 +252,30 @@ export class TetrisObject {
                 temp_sprite[j].push(this.sprite.sprite[i][j]);
             }
         }
+
         for (let i = 0; i < temp_sprite.length; i++) {
             temp_sprite[i].reverse();
         }
 
-        let temp_object = new TetrisObject(new Sprite(temp_sprite), { ...this.coords }, this.color);
 
-        if (temp_object.isCollision(temp_object.coords)) {
-            console.log("collision rotate");
+        let temp_object = new TetrisObject(new Sprite(temp_sprite), { ...this.coords }, this.color);
+        let coords_no_collission = null;
+        for (let j = 0; j < temp_object.sprite.cols; j++) {
+
+            if (!temp_object.isCollision({ x: temp_object.coords.x - j, y: temp_object.coords.y })) {
+                coords_no_collission = { x: temp_object.coords.x - j, y: temp_object.coords.y };
+                break
+            };
+        }
+
+        console.log(coords_no_collission)
+
+        if (coords_no_collission == null) {
             return;
         }
 
         this.sprite = temp_object.sprite;
+        this.coords = coords_no_collission;
     }
 
     /**
@@ -282,9 +294,13 @@ export class TetrisObject {
                     continue;
 
                 for (let z = 0; z < rows - this.coords.y; z++) {
+
                     if (
-                        (this.coords.y + i + z + 1 === rows || tetris_box_2d[this.coords.y + i + z + 1]
-                        [this.coords.x + j].style.backgroundColor !== default_background_color)) {
+                        (this.coords.y + i + z + 1 === rows ||
+                            (tetris_box_2d[this.coords.y + i + z + 1]
+                            [this.coords.x + j].style.backgroundColor !== default_background_color &&
+                                !tetris_box_2d[this.coords.y + i + z + 1][this.coords.x + j]
+                                    .style.backgroundColor.endsWith("0.5)")))) {
 
                         coords_arr.push({ x: this.coords.x, y: this.coords.y + z });
                         break;
@@ -299,14 +315,12 @@ export class TetrisObject {
             if (min_coords.y > coords_arr[i].y) min_coords = coords_arr[i];
         }
 
-        console.log(min_coords);
         return min_coords;
     }
 
     land() {
         let landing_coords = this.get_landing_coords();
 
-        console.log(landing_coords);
         this.coords = landing_coords;
     }
 
@@ -364,26 +378,27 @@ export class Game {
         this.active_object = null;
         this.interval_id = 0;
         this.score = 0;
+        this.is_destroying = false;
     }
 
 
     initialise_controls() {
 
-        document.addEventListener("keydown", (event => {
+        // document.addEventListener("keydown", (event => {
 
-            if (pressedKeys[event.key]) {
-                event.stopPropagation();
-            };
+        //     if (pressedKeys[event.key]) {
+        //         event.stopPropagation();
+        //     };
 
-            pressedKeys[event.key] = true;
+        //     pressedKeys[event.key] = true;
 
-        }))
+        // }))
 
-        document.addEventListener("keyup", (event => {
+        // document.addEventListener("keyup", (event => {
 
-            pressedKeys[event.key] = false;
+        //     pressedKeys[event.key] = false;
 
-        }))
+        // }))
 
         // Left pressed
         document.addEventListener("keydown", (event => {
@@ -408,10 +423,9 @@ export class Game {
         // Space pressed
         document.addEventListener("keydown", (event => {
             if (event.key !== ' ') return;
-            console.log("here")
+
             this.active_object.clear();
-            this.active_object.land();
-            this.active_object.draw();
+            this.land_active_object();
         }))
 
         // Up pressed
@@ -452,15 +466,16 @@ export class Game {
     }
 
     destroy_filled_lines() {
-
+        this.is_destroying = true;
         let rows_destroyed = 0;
 
-        for (let i = 0; i < rows; i++) {
+        for (let i = 6; i < rows; i++) {
 
             let is_row_filled = true;
             for (let j = 0; j < cols; j++) {
 
-                if (tetris_box_2d[i][j].style.backgroundColor === default_background_color) {
+                if (tetris_box_2d[i][j].style.backgroundColor === default_background_color ||
+                    tetris_box_2d[i][j].style.backgroundColor.endsWith("0.5)")) {
                     is_row_filled = false;
                     break;
                 }
@@ -479,11 +494,7 @@ export class Game {
 
 
                 let deleted_row = tetris_box_2d.splice(i, 1);
-                console.log("Deleted row " + deleted_row);
-
                 tetris_box_2d.unshift(deleted_row[0]);
-
-                console.log(tetris_box_2d);
             }
         }
 
@@ -502,6 +513,15 @@ export class Game {
                 break;
         }
 
+        this.is_destroying = false;
+    }
+
+    get_random_tetris_object() {
+        let num = 1 //get_random_number(0, 7);
+        let y = 4;
+        let x = get_random_number(3, 8);
+
+        return new TetrisObject(sprites[num], { x: x, y: y }, colors[num]);
     }
 
     start() {
@@ -513,38 +533,47 @@ export class Game {
         this.update_game();
     }
 
+    land_active_object() {
+        this.active_object.land();
+        this.active_object.draw();
+        this.active_object = null;
+    }
+
+    is_lost() {
+        if (this.active_object.is_touched_down() && this.active_object.coords.y <= 6) {
+            return true;
+        }
+        return false;
+    }
+
     async update_game() {
 
 
         while (this.game_state === 1) {
-            if (this.active_object === null || this.active_object === undefined) {
 
-                let num = 3; //get_random_number(0, 7);
-                let y = 13;
-                let x = get_random_number(3, 8);
-
-                this.active_object = new TetrisObject(sprites[num], { x: x, y: y }, colors[num]);
+            if (this.is_destroying) {
+                continue;
             }
 
-
-
-            this.active_object.clear();
-            this.active_object.moveDown();
-            this.active_object.draw();
-
-            // console.log(this.active_object.is_touched_down())
-
-            if (this.active_object.is_touched_down()) {
-
-                let num = get_random_number(0, 7)
-                let y = 0;
-                let x = get_random_number(3, 8);
-
-                this.active_object = new TetrisObject(sprites[num], { x: x, y: y }, colors[num]);
+            if (this.active_object) {
+                this.active_object.clear();
+                this.active_object.moveDown();
+                this.active_object.draw();
             }
+
+            await sleep(this.update_freq / 5);
+
+            if (this.active_object === null || this.active_object === undefined || this.active_object.is_touched_down()) {
+
+                this.active_object = this.get_random_tetris_object();
+            }
+
             this.destroy_filled_lines();
+            if (this.is_lost()) {
+                this.game_state = 0;
+            }
 
-            await sleep(this.update_freq);
+            await sleep(this.update_freq * 4 / 5);
         }
     }
 
