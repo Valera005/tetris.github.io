@@ -16,12 +16,72 @@
 
     <div class="container">
 
+        <h1>Tetris</h1>
+
+        <div class="score">
+            0
+        </div>
         <div class="tetris__container">
+
             <div class="tetris">
 
 
             </div>
 
+            <div class="next_objects__container">
+                <div class="next_object">
+
+                </div>
+
+                <div class="next_object">
+
+                </div>
+
+                <div class="next_object">
+
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="buttons_container">
+
+            <div class="button start">
+                Start
+            </div>
+
+            <div class="button stop">
+                Stop
+            </div>
+
+            <div class="button reset">
+                Reset
+            </div>
+
+        </div>
+
+        <div class="game_state">
+            Stopped
+        </div>
+
+        <div class="update_freq_holder">
+
+            <label for="update_freq_input">Enter update freq:</label>
+            <input type="number" id="update_freq_input" value="200">
+            <div class="button submit_freq">
+                Submit
+            </div>
+
+        </div>
+
+        <audio id="background-music" loop>
+            <source src="music/bg-music.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+
+        <div class="music_holder">
+            <button class="button" id="music_button">Music</button>
         </div>
 
     </div>
@@ -37,6 +97,18 @@
             }
             tsfhjfsdf.appendChild(elem);
         }
+
+        const gkdfhgkfd = document.querySelectorAll(".next_object")
+
+        for (next_obj of gkdfhgkfd) {
+            for (let i = 0; i < 12; i++) {
+                elem = document.createElement("div");
+                elem.classList.add("next_object__box");
+                elem.style.backgroundColor = "white";
+                next_obj.appendChild(elem);
+            }
+        }
+
     </script>
     <script type="module" src="scripts/script.js"></script>
 </body>
